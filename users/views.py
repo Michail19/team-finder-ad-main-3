@@ -4,7 +4,7 @@ from django.contrib.auth.views import LoginView, PasswordChangeView
 from django.http import HttpResponseForbidden
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DetailView, UpdateView
+from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from .forms import (
     EmailAuthenticationForm,
@@ -40,6 +40,65 @@ class UserPasswordChangeView(PasswordChangeView):
     form_class = UserPasswordChangeForm
     template_name = "users/change_password.html"
     success_url = reverse_lazy("projects:list")
+
+
+class UserListView(ListView):
+    model = User
+    template_name = "users/participants.html"
+    context_object_name = "participants"
+    paginate_by = 12
+
+    def get_queryset(self):
+        queryset = User.objects.order_by("-date_joined").distinct()
+        active_filter = self.request.GET.get("filter")
+
+        if not self.request.user.is_authenticated or not active_filter:
+            return queryset
+
+        user = self.request.user
+
+        if active_filter == "owners-of-favorite-projects":
+            return (
+                queryset.filter(
+                    owned_projects__favorites__user=user
+                )
+                .exclude(pk=user.pk)
+                .distinct()
+            )
+
+        if active_filter == "owners-of-participating-projects":
+            return (
+                queryset.filter(
+                    owned_projects__participants=user
+                )
+                .exclude(pk=user.pk)
+                .distinct()
+            )
+
+        if active_filter == "interested-in-my-projects":
+            return (
+                queryset.filter(
+                    favorites__project__owner=user
+                )
+                .exclude(pk=user.pk)
+                .distinct()
+            )
+
+        if active_filter == "participants-of-my-projects":
+            return (
+                queryset.filter(
+                    participating_projects__owner=user
+                )
+                .exclude(pk=user.pk)
+                .distinct()
+            )
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["active_filter"] = self.request.GET.get("filter", "")
+        return context
 
 
 class UserDetailView(DetailView):
