@@ -68,3 +68,16 @@ class EmailAuthenticationForm(forms.Form):
 
 class UserPasswordChangeForm(PasswordChangeForm):
     pass
+
+
+class UserProfileForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = (
+            "avatar",
+            "name",
+            "surname",
+            "about",
+            "phone",
+            "github_url",
+        )
