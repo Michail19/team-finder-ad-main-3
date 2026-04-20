@@ -5,8 +5,8 @@ from django.urls import reverse
 
 class Project(models.Model):
     class Status(models.TextChoices):
-        ACTIVE = "active", "Активен"
-        COMPLETED = "completed", "Завершён"
+        OPEN = "open", "Открыт"
+        CLOSED = "closed", "Закрыт"
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -22,11 +22,15 @@ class Project(models.Model):
         "описание",
         blank=True,
     )
+    github_url = models.URLField(
+        "GitHub",
+        blank=True,
+    )
     status = models.CharField(
         "статус",
         max_length=20,
         choices=Status.choices,
-        default=Status.ACTIVE,
+        default=Status.OPEN,
     )
     participants = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
