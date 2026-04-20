@@ -44,7 +44,10 @@ class ProjectDetailView(DetailView):
     context_object_name = "project"
 
     def get_queryset(self):
-        return Project.objects.select_related("owner").prefetch_related("participants")
+        return (
+            Project.objects.select_related("owner")
+            .prefetch_related("participants")
+        )
 
 
 class OwnerRequiredMixin(UserPassesTestMixin):
@@ -131,7 +134,46 @@ def toggle_favorite(request, pk):
     return JsonResponse(
         {
             "status": "ok",
-            "is_favorite": is_favorite,
+            "favorite": is_favorite,
             "project_id": project.pk,
+        }
+    )
+
+
+@login_required
+def toggle_participate(request, pk):
+    if request.method != "POST":
+        return JsonResponse(
+            {"status": "error", "message": "Метод не поддерживается"},
+            status=405,
+        )
+
+    project = get_object_or_404(Project, pk=pk)
+
+    if project.owner == request.user:
+        return JsonResponse(
+            {"status": "error", "message": "Автор проекта уже является участником"},
+            status=400,
+        )
+
+    if project.status == Project.Status.CLOSED:
+        return JsonResponse(
+            {"status": "error", "message": "Нельзя участвовать в закрытом проекте"},
+            status=400,
+        )
+
+    if project.participants.filter(pk=request.user.pk).exists():
+        project.participants.remove(request.user)
+        participant = False
+    else:
+        project.participants.add(request.user)
+        participant = True
+
+    return JsonResponse(
+        {
+            "status": "ok",
+            "participant": participant,
+            "project_id": project.pk,
+            "participants_count": project.participants.count(),
         }
     )

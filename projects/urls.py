@@ -8,6 +8,7 @@ from .views import (
     ProjectUpdateView,
     complete_project,
     toggle_favorite,
+    toggle_participate,
 )
 
 app_name = "projects"
@@ -20,4 +21,5 @@ urlpatterns = [
     path("<int:pk>/edit/", ProjectUpdateView.as_view(), name="edit"),
     path("<int:pk>/complete/", complete_project, name="complete"),
     path("<int:pk>/toggle-favorite/", toggle_favorite, name="toggle-favorite"),
+    path("<int:pk>/toggle-participate/", toggle_participate, name="toggle-participate"),
 ]
