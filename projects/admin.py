@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Favorite, Project
+from .models import Project
 
 
 @admin.register(Project)
@@ -28,26 +28,4 @@ class ProjectAdmin(admin.ModelAdmin):
     )
     filter_horizontal = (
         "participants",
-    )
-
-
-@admin.register(Favorite)
-class FavoriteAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "user",
-        "project",
-        "created_at",
-    )
-    list_filter = (
-        "created_at",
-    )
-    search_fields = (
-        "user__email",
-        "user__name",
-        "user__surname",
-        "project__name",
-    )
-    ordering = (
-        "-created_at",
     )

@@ -1,3 +1,6 @@
+import re
+from urllib.parse import urlparse
+
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordChangeForm
@@ -77,7 +80,68 @@ class UserProfileForm(forms.ModelForm):
             "avatar",
             "name",
             "surname",
+            "email",
             "about",
             "phone",
             "github_url",
         )
+
+    def clean_email(self):
+        email = (self.cleaned_data.get("email") or "").strip().lower()
+
+        qs = User.objects.filter(email=email)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise forms.ValidationError("Пользователь с таким email уже существует.")
+
+        return email
+
+    def clean_phone(self):
+        phone = (self.cleaned_data.get("phone") or "").strip()
+
+        if phone and not re.fullmatch(r"(8\d{10}|\+7\d{10})", phone):
+            raise forms.ValidationError(
+                "Введите корректный номер телефона: 8XXXXXXXXXX или +7XXXXXXXXXX."
+            )
+
+        if not phone:
+            return phone
+
+        normalized_phone = "+7" + phone[1:] if phone.startswith("8") else phone
+
+        qs = User.objects.filter(phone=normalized_phone)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise forms.ValidationError("Номер телефона уже зарегистрирован.")
+
+        return normalized_phone
+
+    def clean_github_url(self):
+        github_url = (self.cleaned_data.get("github_url") or "").strip()
+
+        if not github_url:
+            return github_url
+
+        parsed = urlparse(github_url)
+        domain = parsed.netloc.lower()
+
+        allowed_domains = {"github.com", "www.github.com"}
+        if domain not in allowed_domains:
+            raise forms.ValidationError("Введите корректную ссылку на GitHub.")
+
+        normalized_url = github_url.rstrip("/")
+
+        qs = User.objects.filter(github_url=normalized_url)
+        if self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        if qs.exists():
+            raise forms.ValidationError(
+                "Профиль пользователя с данной ссылкой на профиль GitHub уже существует."
+            )
+
+        return normalized_url

@@ -18,6 +18,6 @@ urlpatterns = [
     path("logout/", logout_view, name="logout"),
     path("change-password/", UserPasswordChangeView.as_view(), name="change-password"),
     path("list/", UserListView.as_view(), name="list"),
-    path("<int:pk>/", UserDetailView.as_view(), name="detail"),
     path("edit-profile/", UserUpdateView.as_view(), name="edit-profile"),
+    path("<int:pk>/", UserDetailView.as_view(), name="detail"),
 ]

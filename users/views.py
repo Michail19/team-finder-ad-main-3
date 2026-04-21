@@ -15,6 +15,14 @@ from .forms import (
 from .models import User
 
 
+FILTER_CHOICES = (
+    ("owners-of-favorite-projects", "Авторы избранных проектов"),
+    ("owners-of-participating-projects", "Авторы проектов, в которых я участвую"),
+    ("interested-in-my-projects", "Пользователи, которым нравятся мои проекты"),
+    ("participants-of-my-projects", "Участники моих проектов"),
+)
+
+
 class RegisterView(CreateView):
     model = User
     form_class = UserRegistrationForm
@@ -33,13 +41,15 @@ class EmailLoginView(LoginView):
 
 def logout_view(request):
     logout(request)
-    return redirect("users:login")
+    return redirect("projects:list")
 
 
-class UserPasswordChangeView(PasswordChangeView):
+class UserPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
     form_class = UserPasswordChangeForm
     template_name = "users/change_password.html"
-    success_url = reverse_lazy("projects:list")
+
+    def get_success_url(self):
+        return reverse_lazy("users:detail", kwargs={"pk": self.request.user.pk})
 
 
 class UserListView(ListView):
@@ -59,36 +69,28 @@ class UserListView(ListView):
 
         if active_filter == "owners-of-favorite-projects":
             return (
-                queryset.filter(
-                    owned_projects__favorites__user=user
-                )
+                queryset.filter(owned_projects__interested_users=user)
                 .exclude(pk=user.pk)
                 .distinct()
             )
 
         if active_filter == "owners-of-participating-projects":
             return (
-                queryset.filter(
-                    owned_projects__participants=user
-                )
+                queryset.filter(owned_projects__participants=user)
                 .exclude(pk=user.pk)
                 .distinct()
             )
 
         if active_filter == "interested-in-my-projects":
             return (
-                queryset.filter(
-                    favorites__project__owner=user
-                )
+                queryset.filter(favorites__owner=user)
                 .exclude(pk=user.pk)
                 .distinct()
             )
 
         if active_filter == "participants-of-my-projects":
             return (
-                queryset.filter(
-                    participating_projects__owner=user
-                )
+                queryset.filter(participated_projects__owner=user)
                 .exclude(pk=user.pk)
                 .distinct()
             )
@@ -97,7 +99,9 @@ class UserListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["active_filter"] = self.request.GET.get("filter", "")
+        active_filter = self.request.GET.get("filter", "")
+        context["active_filter"] = FILTER_CHOICES
+        context["active_skill"] = active_filter
         return context
 
 

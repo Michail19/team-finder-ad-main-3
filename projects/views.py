@@ -3,11 +3,11 @@ import re
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.http import HttpResponseForbidden, JsonResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from .forms import ProjectForm
-from .models import Favorite, Project
+from .models import Project
 
 
 class ProjectListView(ListView):
@@ -29,10 +29,7 @@ class ProjectListView(ListView):
         if not self.request.user.is_authenticated:
             return response
 
-        favorite_ids = Favorite.objects.filter(
-            user=self.request.user
-        ).values_list("project_id", flat=True)
-
+        favorite_ids = self.request.user.favorites.values_list("pk", flat=True)
         html = mark_favorite(response.rendered_content, favorite_ids)
         response.content = html.encode(response.charset)
         return response
@@ -46,11 +43,9 @@ class FavoriteProjectListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return (
-            Project.objects.filter(favorites__user=self.request.user)
-            .select_related("owner")
+            self.request.user.favorites.select_related("owner")
             .prefetch_related("participants")
-            .order_by("-favorites__created_at")
-            .distinct()
+            .order_by("-created_at")
         )
 
     def render_to_response(self, context, **response_kwargs):
@@ -63,13 +58,15 @@ class FavoriteProjectListView(LoginRequiredMixin, ListView):
 
 def mark_favorite(render_html, project_ids):
     html = render_html
+
     for project_id in project_ids:
         pattern = (
-            rf'(<button[^>]*class="project-fav-icon )not-favorite("'
+            rf'(.*class="project-fav-icon )not-favorite("'
             rf'[^>]*data-project-id="{project_id}"[^>]*data-fav=")false(")'
         )
-        replacement = r'\1favorite\2true\3'
+        replacement = r"\1favorite\2true\3"
         html = re.sub(pattern, replacement, html)
+
     return html
 
 
@@ -125,24 +122,27 @@ class ProjectUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
 
 @login_required
 def complete_project(request, pk):
+    if request.method != "POST":
+        return JsonResponse(
+            {"status": "error", "message": "Метод не поддерживается"},
+            status=405,
+        )
+
     project = get_object_or_404(Project, pk=pk)
 
     if project.owner != request.user:
         return JsonResponse({"status": "error", "message": "Нет доступа"}, status=403)
 
-    if request.method != "POST":
-        return JsonResponse({"status": "error", "message": "Метод не поддерживается"}, status=405)
+    if project.status != "open":
+        return JsonResponse(
+            {"status": "error", "message": "Проект уже закрыт"},
+            status=400,
+        )
 
-    if project.status != Project.Status.CLOSED:
-        project.status = Project.Status.CLOSED
-        project.save(update_fields=["status"])
+    project.status = "closed"
+    project.save(update_fields=["status"])
 
-    return JsonResponse({
-        "status": "ok",
-        "project_status": project.status,
-        "project_status_display": "Закрыт",
-        "project_id": project.pk,
-    })
+    return JsonResponse({"status": "ok", "project_status": "closed"})
 
 
 @login_required
@@ -155,24 +155,14 @@ def toggle_favorite(request, pk):
 
     project = get_object_or_404(Project, pk=pk)
 
-    favorite, created = Favorite.objects.get_or_create(
-        user=request.user,
-        project=project,
-    )
-
-    if created:
-        is_favorite = True
+    if request.user.favorites.filter(pk=project.pk).exists():
+        request.user.favorites.remove(project)
+        favorited = False
     else:
-        favorite.delete()
-        is_favorite = False
+        request.user.favorites.add(project)
+        favorited = True
 
-    return JsonResponse(
-        {
-            "status": "ok",
-            "favorite": is_favorite,
-            "project_id": project.pk,
-        }
-    )
+    return JsonResponse({"status": "ok", "favorited": favorited})
 
 
 @login_required
@@ -185,18 +175,6 @@ def toggle_participate(request, pk):
 
     project = get_object_or_404(Project, pk=pk)
 
-    if project.owner == request.user:
-        return JsonResponse(
-            {"status": "error", "message": "Автор проекта уже является участником"},
-            status=400,
-        )
-
-    if project.status == Project.Status.CLOSED:
-        return JsonResponse(
-            {"status": "error", "message": "Нельзя участвовать в закрытом проекте"},
-            status=400,
-        )
-
     if project.participants.filter(pk=request.user.pk).exists():
         project.participants.remove(request.user)
         participant = False
@@ -208,7 +186,5 @@ def toggle_participate(request, pk):
         {
             "status": "ok",
             "participant": participant,
-            "project_id": project.pk,
-            "participants_count": project.participants.count(),
         }
     )
