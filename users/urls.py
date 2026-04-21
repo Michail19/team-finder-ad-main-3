@@ -19,5 +19,5 @@ urlpatterns = [
     path("change-password/", UserPasswordChangeView.as_view(), name="change-password"),
     path("list/", UserListView.as_view(), name="list"),
     path("<int:pk>/", UserDetailView.as_view(), name="detail"),
-    path("<int:pk>/edit/", UserUpdateView.as_view(), name="edit"),
+    path("edit-profile/", UserUpdateView.as_view(), name="edit-profile"),
 ]

@@ -1,3 +1,5 @@
+import re
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.http import HttpResponseForbidden, JsonResponse
@@ -21,6 +23,20 @@ class ProjectListView(ListView):
             .order_by("-created_at")
         )
 
+    def render_to_response(self, context, **response_kwargs):
+        response = super().render_to_response(context, **response_kwargs)
+
+        if not self.request.user.is_authenticated:
+            return response
+
+        favorite_ids = Favorite.objects.filter(
+            user=self.request.user
+        ).values_list("project_id", flat=True)
+
+        html = mark_favorite(response.rendered_content, favorite_ids)
+        response.content = html.encode(response.charset)
+        return response
+
 
 class FavoriteProjectListView(LoginRequiredMixin, ListView):
     model = Project
@@ -36,6 +52,25 @@ class FavoriteProjectListView(LoginRequiredMixin, ListView):
             .order_by("-favorites__created_at")
             .distinct()
         )
+
+    def render_to_response(self, context, **response_kwargs):
+        response = super().render_to_response(context, **response_kwargs)
+        project_ids = [project.pk for project in context["projects"]]
+        html = mark_favorite(response.rendered_content, project_ids)
+        response.content = html.encode(response.charset)
+        return response
+
+
+def mark_favorite(render_html, project_ids):
+    html = render_html
+    for project_id in project_ids:
+        pattern = (
+            rf'(<button[^>]*class="project-fav-icon )not-favorite("'
+            rf'[^>]*data-project-id="{project_id}"[^>]*data-fav=")false(")'
+        )
+        replacement = r'\1favorite\2true\3'
+        html = re.sub(pattern, replacement, html)
+    return html
 
 
 class ProjectDetailView(DetailView):

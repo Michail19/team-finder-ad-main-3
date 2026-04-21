@@ -19,7 +19,7 @@ class RegisterView(CreateView):
     model = User
     form_class = UserRegistrationForm
     template_name = "users/register.html"
-    success_url = reverse_lazy("projects:list")
+    success_url = reverse_lazy("users:login")
 
 
 class EmailLoginView(LoginView):
@@ -119,11 +119,14 @@ class OwnerRequiredMixin(UserPassesTestMixin):
         return HttpResponseForbidden("У вас нет доступа к этому действию.")
 
 
-class UserUpdateView(LoginRequiredMixin, OwnerRequiredMixin, UpdateView):
+class UserUpdateView(LoginRequiredMixin, UpdateView):
     model = User
     form_class = UserProfileForm
     template_name = "users/edit_profile.html"
     context_object_name = "user"
 
+    def get_object(self, queryset=None):
+        return self.request.user
+
     def get_success_url(self):
-        return reverse_lazy("users:detail", kwargs={"pk": self.object.pk})
+        return reverse_lazy("users:detail", kwargs={"pk": self.request.user.pk})
