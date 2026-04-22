@@ -80,7 +80,6 @@ class UserProfileForm(forms.ModelForm):
             "avatar",
             "name",
             "surname",
-            "email",
             "about",
             "phone",
             "github_url",
@@ -89,11 +88,11 @@ class UserProfileForm(forms.ModelForm):
     def clean_email(self):
         email = (self.cleaned_data.get("email") or "").strip().lower()
 
-        qs = User.objects.filter(email=email)
+        uf = User.objects.filter(email=email)
         if self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
+            uf = uf.exclude(pk=self.instance.pk)
 
-        if qs.exists():
+        if uf.exists():
             raise forms.ValidationError("Пользователь с таким email уже существует.")
 
         return email
@@ -111,11 +110,11 @@ class UserProfileForm(forms.ModelForm):
 
         normalized_phone = "+7" + phone[1:] if phone.startswith("8") else phone
 
-        qs = User.objects.filter(phone=normalized_phone)
+        uf = User.objects.filter(phone=normalized_phone)
         if self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
+            uf = uf.exclude(pk=self.instance.pk)
 
-        if qs.exists():
+        if uf.exists():
             raise forms.ValidationError("Номер телефона уже зарегистрирован.")
 
         return normalized_phone
@@ -135,11 +134,11 @@ class UserProfileForm(forms.ModelForm):
 
         normalized_url = github_url.rstrip("/")
 
-        qs = User.objects.filter(github_url=normalized_url)
+        uf = User.objects.filter(github_url=normalized_url)
         if self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
+            uf = uf.exclude(pk=self.instance.pk)
 
-        if qs.exists():
+        if uf.exists():
             raise forms.ValidationError(
                 "Профиль пользователя с данной ссылкой на профиль GitHub уже существует."
             )

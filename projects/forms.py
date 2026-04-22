@@ -24,11 +24,11 @@ class ProjectForm(forms.ModelForm):
 
         normalized_url = github_url.rstrip("/")
 
-        qs = Project.objects.filter(github_url=normalized_url)
+        pf = Project.objects.filter(github_url=normalized_url)
         if self.instance.pk:
-            qs = qs.exclude(pk=self.instance.pk)
+            pf = pf.exclude(pk=self.instance.pk)
 
-        if qs.exists():
+        if pf.exists():
             raise forms.ValidationError("Профиль пользователя с данной ссылкой на профиль GitHub уже существует.")
 
         return normalized_url

@@ -16,7 +16,7 @@ class ProjectListView(ListView):
     context_object_name = "projects"
     paginate_by = 12
 
-    def get_queryset(self):
+    def get_query_set(self):
         return (
             Project.objects.select_related("owner")
             .prefetch_related("participants")
@@ -32,6 +32,7 @@ class ProjectListView(ListView):
         favorite_ids = self.request.user.favorites.values_list("pk", flat=True)
         html = mark_favorite(response.rendered_content, favorite_ids)
         response.content = html.encode(response.charset)
+
         return response
 
 
@@ -41,7 +42,7 @@ class FavoriteProjectListView(LoginRequiredMixin, ListView):
     context_object_name = "projects"
     paginate_by = 12
 
-    def get_queryset(self):
+    def get_query_set(self):
         return (
             self.request.user.favorites.select_related("owner")
             .prefetch_related("participants")
@@ -53,6 +54,7 @@ class FavoriteProjectListView(LoginRequiredMixin, ListView):
         project_ids = [project.pk for project in context["projects"]]
         html = mark_favorite(response.rendered_content, project_ids)
         response.content = html.encode(response.charset)
+
         return response
 
 
@@ -75,7 +77,7 @@ class ProjectDetailView(DetailView):
     template_name = "projects/project-details.html"
     context_object_name = "project"
 
-    def get_queryset(self):
+    def get_query_set(self):
         return (
             Project.objects.select_related("owner")
             .prefetch_related("participants")

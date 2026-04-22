@@ -1,11 +1,15 @@
 import io
 import random
+from pathlib import Path
 
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.core.files.base import ContentFile
 from django.db import models
 from PIL import Image, ImageDraw, ImageFont
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class UserManager(BaseUserManager):
@@ -101,6 +105,13 @@ class User(AbstractUser):
             )
         super().save(*args, **kwargs)
 
+    def _get_avatar_font(self, size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+        font_path = BASE_DIR / "assets" / "fonts" / "DejaVuSans-Bold.ttf"
+        try:
+            return ImageFont.truetype(str(font_path), size)
+        except OSError:
+            return ImageFont.load_default()
+
     def _generate_avatar(self):
         size = (200, 200)
         background_colors = [
@@ -117,11 +128,7 @@ class User(AbstractUser):
         draw = ImageDraw.Draw(image)
 
         letter = (self.name[:1] or "U").upper()
-
-        try:
-            font = ImageFont.truetype("arial.ttf", 100)
-        except OSError:
-            font = ImageFont.load_default()
+        font = self._get_avatar_font(100)
 
         bbox = draw.textbbox((0, 0), letter, font=font)
         text_width = bbox[2] - bbox[0]
@@ -134,4 +141,5 @@ class User(AbstractUser):
 
         buffer = io.BytesIO()
         image.save(buffer, format="PNG")
+
         return buffer.getvalue()

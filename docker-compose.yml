@@ -10,5 +10,39 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: always
 
+  server:
+    build: .
+    container_name: teamfinder_server
+    env_file:
+      - .env
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    volumes:
+      - media_data:/app/media
+    restart: always
+    command: ["/app/entrypoint.sh"]
+
+  seed:
+    build: .
+    container_name: teamfinder_seed
+    env_file:
+      - .env
+    depends_on:
+      - db
+    volumes:
+      - media_data:/app/media
+    command: >
+      sh -c "
+      while ! nc -z $$POSTGRES_HOST $$POSTGRES_PORT; do sleep 1; done &&
+      python manage.py migrate &&
+      python manage.py seed_users_data &&
+      python manage.py seed_projects_data
+      "
+    profiles:
+      - seed
+
 volumes:
   postgres_data:
+  media_data:
