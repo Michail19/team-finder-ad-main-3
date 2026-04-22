@@ -1,14 +1,9 @@
-import io
-import random
-from pathlib import Path
-
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.core.files.base import ContentFile
 from django.db import models
-from PIL import Image, ImageDraw, ImageFont
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+from .utils import DEFAULT_AVATAR_FILENAME_TEMPLATE, generate_avatar
 
 
 class UserManager(BaseUserManager):
@@ -98,47 +93,8 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         if not self.avatar:
             self.avatar.save(
-                f"default_avatar_{self.email}.png",
-                ContentFile(self._generate_avatar()),
+                DEFAULT_AVATAR_FILENAME_TEMPLATE.format(email=self.email),
+                ContentFile(generate_avatar(self.name)),
                 save=False,
             )
         super().save(*args, **kwargs)
-
-    def _get_avatar_font(self, size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-        font_path = BASE_DIR / "assets" / "fonts" / "DejaVuSans-Bold.ttf"
-        try:
-            return ImageFont.truetype(str(font_path), size)
-        except OSError:
-            return ImageFont.load_default()
-
-    def _generate_avatar(self):
-        size = (200, 200)
-        background_colors = [
-            "#5E81AC",
-            "#6A8E7F",
-            "#8F7A66",
-            "#7B8FA1",
-            "#8C7AA9",
-            "#6D8299",
-        ]
-        bg_color = random.choice(background_colors)
-
-        image = Image.new("RGB", size, bg_color)
-        draw = ImageDraw.Draw(image)
-
-        letter = (self.name[:1] or "U").upper()
-        font = self._get_avatar_font(100)
-
-        bbox = draw.textbbox((0, 0), letter, font=font)
-        text_width = bbox[2] - bbox[0]
-        text_height = bbox[3] - bbox[1]
-
-        x = (size[0] - text_width) / 2
-        y = (size[1] - text_height) / 2 - 10
-
-        draw.text((x, y), letter, fill="white", font=font)
-
-        buffer = io.BytesIO()
-        image.save(buffer, format="PNG")
-
-        return buffer.getvalue()
