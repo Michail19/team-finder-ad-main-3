@@ -14,7 +14,6 @@ from .forms import (
 )
 from .models import User
 
-
 FILTER_CHOICES = (
     ("owners-of-favorite-projects", "Авторы избранных проектов"),
     ("owners-of-participating-projects", "Авторы проектов, в которых я участвую"),

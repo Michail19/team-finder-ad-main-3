@@ -8,7 +8,6 @@ from django.core.files.base import ContentFile
 from django.db import models
 from PIL import Image, ImageDraw, ImageFont
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 

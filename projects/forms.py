@@ -29,6 +29,7 @@ class ProjectForm(forms.ModelForm):
             pf = pf.exclude(pk=self.instance.pk)
 
         if pf.exists():
-            raise forms.ValidationError("Профиль пользователя с данной ссылкой на профиль GitHub уже существует.")
+            raise forms.ValidationError("Профиль пользователя с данной ссылкой на профиль GitHub"
+                                        " уже существует.")
 
         return normalized_url

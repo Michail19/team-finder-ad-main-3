@@ -4,7 +4,6 @@ from django.db import transaction
 from projects.models import Project
 from users.models import User
 
-
 DEMO_PROJECTS = [
     {
         "owner_email": "ivanov@example.com",
