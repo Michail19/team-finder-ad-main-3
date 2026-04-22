@@ -3,12 +3,12 @@ from django.db import models
 from django.urls import reverse
 
 
-class Project(models.Model):
-    STATUS_CHOICES = [
-        ("open", "Открыт"),
-        ("closed", "Закрыт"),
-    ]
+class ProjectStatus(models.TextChoices):
+    OPEN = "open", "Открыт"
+    CLOSED = "closed", "Закрыт"
 
+
+class Project(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -30,8 +30,8 @@ class Project(models.Model):
     status = models.CharField(
         "статус",
         max_length=6,
-        choices=STATUS_CHOICES,
-        default="open",
+        choices=ProjectStatus.choices,
+        default=ProjectStatus.OPEN,
     )
     participants = models.ManyToManyField(
         settings.AUTH_USER_MODEL,

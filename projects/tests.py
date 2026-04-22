@@ -4,13 +4,11 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from projects.models import Project
+from projects.models import Project, ProjectStatus
 
 User = get_user_model()
 
 TEST_PASSWORD = "strongpassword123"
-OPEN_PROJECT_STATUS = "open"
-CLOSED_PROJECT_STATUS = "closed"
 
 OWNER_EMAIL = "owner@example.com"
 OTHER_EMAIL = "other@example.com"
@@ -51,7 +49,7 @@ class ProjectTests(TestCase):
             owner=self.owner,
             name=DEMO_PROJECT_NAME,
             description=DEMO_PROJECT_DESCRIPTION,
-            status=OPEN_PROJECT_STATUS,
+            status=ProjectStatus.OPEN,
         )
         self.project.participants.add(self.owner)
 
@@ -68,7 +66,7 @@ class ProjectTests(TestCase):
                 "name": NEW_PROJECT_NAME,
                 "description": NEW_PROJECT_DESCRIPTION,
                 "github_url": NEW_PROJECT_GITHUB_URL,
-                "status": OPEN_PROJECT_STATUS,
+                "status": ProjectStatus.OPEN,
             },
         )
 
@@ -92,7 +90,7 @@ class ProjectTests(TestCase):
                 "name": UPDATED_PROJECT_NAME,
                 "description": UPDATED_PROJECT_DESCRIPTION,
                 "github_url": UPDATED_PROJECT_GITHUB_URL,
-                "status": OPEN_PROJECT_STATUS,
+                "status": ProjectStatus.OPEN,
             },
         )
 
@@ -107,7 +105,7 @@ class ProjectTests(TestCase):
 
         self.assertEqual(response.status_code, HTTPStatus.OK)
         self.project.refresh_from_db()
-        self.assertEqual(self.project.status, CLOSED_PROJECT_STATUS)
+        self.assertEqual(self.project.status, ProjectStatus.CLOSED)
 
     def test_user_can_toggle_favorite(self):
         self.client.login(email=OTHER_EMAIL, password=TEST_PASSWORD)
@@ -134,7 +132,7 @@ class ProjectTests(TestCase):
             owner=self.other,
             name=OTHER_PROJECT_NAME,
             description=OTHER_PROJECT_DESCRIPTION,
-            status=OPEN_PROJECT_STATUS,
+            status=ProjectStatus.OPEN,
         )
         other_project.participants.add(self.other)
 

@@ -8,11 +8,9 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from .forms import ProjectForm
 from .mixins import OwnerRequiredMixin
-from .models import Project
+from .models import Project, ProjectStatus
 
 PAGINATE_BY = 12
-OPEN_PROJECT_STATUS = "open"
-CLOSED_PROJECT_STATUS = "closed"
 ERROR_STATUS = "error"
 OK_STATUS = "ok"
 METHOD_NOT_ALLOWED_MESSAGE = "Метод не поддерживается"
@@ -102,17 +100,17 @@ def complete_project(request, pk):
             status=HTTPStatus.FORBIDDEN,
         )
 
-    if project.status != OPEN_PROJECT_STATUS:
+    if project.status != ProjectStatus.OPEN:
         return JsonResponse(
             {"status": ERROR_STATUS, "message": PROJECT_ALREADY_CLOSED_MESSAGE},
             status=HTTPStatus.BAD_REQUEST,
         )
 
-    project.status = CLOSED_PROJECT_STATUS
+    project.status = ProjectStatus.CLOSED
     project.save(update_fields=["status"])
 
     return JsonResponse(
-        {"status": OK_STATUS, "project_status": CLOSED_PROJECT_STATUS},
+        {"status": OK_STATUS, "project_status": ProjectStatus.CLOSED},
         status=HTTPStatus.OK,
     )
 
