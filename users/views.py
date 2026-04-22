@@ -65,44 +65,44 @@ class UserListView(ListView):
     context_object_name = "participants"
     paginate_by = PAGINATE_BY
 
-    def get_query_set(self):
-        query_set = User.objects.order_by("-date_joined").distinct()
+    def get_queryset(self):
+        queryset = User.objects.order_by("-date_joined").distinct()
         active_filter = self.request.GET.get("filter")
 
         if not self.request.user.is_authenticated or not active_filter:
-            return query_set
+            return queryset
 
         user = self.request.user
 
         if active_filter == OWNERS_OF_FAVORITE_PROJECTS:
             return (
-                query_set.filter(owned_projects__interested_users=user)
+                queryset.filter(owned_projects__interested_users=user)
                 .exclude(pk=user.pk)
                 .distinct()
             )
 
         if active_filter == OWNERS_OF_PARTICIPATING_PROJECTS:
             return (
-                query_set.filter(owned_projects__participants=user)
+                queryset.filter(owned_projects__participants=user)
                 .exclude(pk=user.pk)
                 .distinct()
             )
 
         if active_filter == INTERESTED_IN_MY_PROJECTS:
             return (
-                query_set.filter(favorites__owner=user)
+                queryset.filter(favorites__owner=user)
                 .exclude(pk=user.pk)
                 .distinct()
             )
 
         if active_filter == PARTICIPANTS_OF_MY_PROJECTS:
             return (
-                query_set.filter(participated_projects__owner=user)
+                queryset.filter(participated_projects__owner=user)
                 .exclude(pk=user.pk)
                 .distinct()
             )
 
-        return query_set
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

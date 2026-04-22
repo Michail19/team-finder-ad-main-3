@@ -26,7 +26,7 @@ class ProjectListView(ListView):
     context_object_name = "projects"
     paginate_by = PAGINATE_BY
 
-    def get_query_set(self):
+    def get_queryset(self):
         return (
             Project.objects.select_related("owner")
             .prefetch_related("participants")
@@ -40,7 +40,7 @@ class FavoriteProjectListView(LoginRequiredMixin, ListView):
     context_object_name = "projects"
     paginate_by = PAGINATE_BY
 
-    def get_query_set(self):
+    def get_queryset(self):
         return (
             self.request.user.favorites.select_related("owner")
             .prefetch_related("participants")
@@ -53,7 +53,7 @@ class ProjectDetailView(DetailView):
     template_name = "projects/project-details.html"
     context_object_name = "project"
 
-    def get_query_set(self):
+    def get_queryset(self):
         return Project.objects.select_related("owner").prefetch_related("participants")
 
 
