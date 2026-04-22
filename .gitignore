@@ -1,5 +1,8 @@
 /team_finder/media/
 
+/media/avatars/
+!/media/avatars/avatar_f7f85599-20bc-4d08-9cdd-cefa8b1f93ff.png
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
